@@ -17,8 +17,8 @@ public class UserLoginGUI extends JFrame {
         setLocationRelativeTo(null);
 
 
-        JPanel panel = new JPanel(new GridLayout(4, 2, 10, 10)); // adds horizontal and vertical spacing
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10)); // margin around the grid
+        JPanel panel = new JPanel(new GridLayout(4, 2, 10, 10)); 
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10)); 
 
 
         panel.add(new JLabel("Username:"));
@@ -45,7 +45,7 @@ public class UserLoginGUI extends JFrame {
         setVisible(true);
     }
 
-    private void loginUser() {
+    private void loginUser() {//with the use of AI
         String username = usernameField.getText();
         String password = new String(passwordField.getPassword());
 
