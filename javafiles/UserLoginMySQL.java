@@ -1,41 +1,45 @@
 import java.sql.*;
 import java.util.Scanner;
- // ---------------------------------------
-// INTRUCTIONS :- 
-// create a database in mySQL named Nutrifit, and create a table named users
-// create 2 tables with this command 
-// ""CREATE TABLE users (
-//username VARCHAR(50) PRIMARY KEY,
-//password VARCHAR(100)
-//)"";
-
 
 public class UserLoginMySQL {
-	static final String DB_URL = "jdbc:mysql://localhost:3306/Nutrifit"; // make sure you ahve a database named Nutrifit
+    static final String DB_URL = "jdbc:mysql://localhost:3306/Nutrifit";
     static final String USER = "root";
-    static final String PASS = "07671";  // use your own password ( root pass :] )
+    static final String PASS = "07671";  // Update with your root password
+
     static Scanner sc = new Scanner(System.in);
 
     public static void main(String[] args) {
-        loginMenu();
+        while (true) {
+            loginMenu();
+        }
     }
 
-    
     static void loginMenu() {
         System.out.println("===== LOGIN MENU =====");
-        System.out.println("1. Sign up");
+        System.out.println("1. Sign Up");
         System.out.println("2. Login");
         System.out.println("3. Reset Password");
         System.out.println("4. Exit");
         System.out.print("Enter your choice: ");
+
         int choice = sc.nextInt();
-        sc.nextLine();  
+        sc.nextLine(); // Consume newline
 
         switch (choice) {
-            case 1 : register();
-            case 2 : login();
-            case 3 : resetPassword();
-            default : System.out.println("Goodbye!");
+            case 1:
+                register();
+                break;
+            case 2:
+                login();
+                break;
+            case 3:
+                resetPassword();
+                break;
+            case 4:
+                System.out.println("Goodbye!");
+                System.exit(0);
+            default:
+                System.out.println("Invalid choice.");
         }
     }
 
@@ -44,27 +48,31 @@ public class UserLoginMySQL {
         String username = sc.nextLine();
         System.out.print("Enter password: ");
         String password = sc.nextLine();
-    
+
         try (Connection conn = DriverManager.getConnection(DB_URL, USER, PASS)) {
-            conn.setAutoCommit(true); // Optional, for safety
-            System.out.println("✅ Connected to database successfully.");
-    
             String query = "INSERT INTO users (username, password) VALUES (?, ?)";
-            PreparedStatement ps = conn.prepareStatement(query);
+            PreparedStatement ps = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
             ps.setString(1, username);
             ps.setString(2, password);
             ps.executeUpdate();
-    
-            System.out.println("✅ Insert query executed.");
-            System.out.println("User registered successfully.");
+
+            ResultSet rs = ps.getGeneratedKeys();
+            if (rs.next()) {
+                int userId = rs.getInt(1);
+                System.out.println("✅ User registered successfully. User ID: " + userId);
+
+                if (!ProfileDAO.profileExists(userId)) {
+                    new ProfileCreationPage(userId);
+                } else {
+                    new MainMenuPage(userId);
+                }
+            }
         } catch (SQLIntegrityConstraintViolationException e) {
-            System.out.println("Username already exists.");
+            System.out.println("❌ Username already exists.");
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        loginMenu();
     }
-    
 
     static void login() {
         System.out.print("Enter username: ");
@@ -73,25 +81,31 @@ public class UserLoginMySQL {
         String password = sc.nextLine();
 
         try (Connection conn = DriverManager.getConnection(DB_URL, USER, PASS)) {
-            String query = "SELECT * FROM users WHERE username = ? AND password = ?";
+            String query = "SELECT user_id FROM users WHERE username = ? AND password = ?";
             PreparedStatement ps = conn.prepareStatement(query);
             ps.setString(1, username);
             ps.setString(2, password);
             ResultSet rs = ps.executeQuery();
 
             if (rs.next()) {
-                System.out.println("Login successful. Welcome, " + username + "!");
+                int userId = rs.getInt("user_id");
+                System.out.println("✅ Login successful. User ID: " + userId);
+
+                if (!ProfileDAO.profileExists(userId)) {
+                    new ProfileCreationPage(userId);
+                } else {
+                    new MainMenuPage(userId);
+                }
             } else {
-                System.out.println("Invalid credentials.");
+                System.out.println("❌ Invalid username or password.");
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        loginMenu();
     }
 
     static void resetPassword() {
-        System.out.print("Enter existing username: ");
+        System.out.print("Enter your username: ");
         String username = sc.nextLine();
         System.out.print("Enter current password: ");
         String oldPassword = sc.nextLine();
@@ -106,18 +120,19 @@ public class UserLoginMySQL {
             if (rs.next()) {
                 System.out.print("Enter new password: ");
                 String newPassword = sc.nextLine();
+
                 String updateQuery = "UPDATE users SET password = ? WHERE username = ?";
                 PreparedStatement update = conn.prepareStatement(updateQuery);
                 update.setString(1, newPassword);
                 update.setString(2, username);
                 update.executeUpdate();
-                System.out.println("Password updated successfully.");
+
+                System.out.println("✅ Password updated successfully.");
             } else {
-                System.out.println("Invalid username or password.");
+                System.out.println("❌ Invalid username or password.");
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        loginMenu();
     }
 }
